@@ -1,4 +1,4 @@
-"""Tests for vault_cli.frontmatter — Frontmatter parsing and manipulation.
+"""Tests for vault_cli.core.frontmatter — Frontmatter parsing and manipulation.
 
 These tests define the contract for frontmatter helpers used throughout the CLI.
 """
@@ -11,7 +11,7 @@ class TestParseFrontmatter:
 
     def test_note_with_frontmatter(self):
         """Parses a standard note with YAML frontmatter."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = (
             "---\n"
@@ -31,7 +31,7 @@ class TestParseFrontmatter:
 
     def test_note_without_frontmatter(self):
         """Note without frontmatter returns empty dict and full content as body."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "# Just a Heading\n\nSome text.\n"
         metadata, body = parse_frontmatter(content)
@@ -40,7 +40,7 @@ class TestParseFrontmatter:
 
     def test_frontmatter_with_list_tags(self):
         """Parses frontmatter containing YAML lists (block style)."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\ntags:\n  - ai\n  - agent\n  - python\n---\n\nBody.\n"
         metadata, body = parse_frontmatter(content)
@@ -52,7 +52,7 @@ class TestParseFrontmatter:
 
     def test_frontmatter_with_inline_list(self):
         """Parses frontmatter containing inline YAML lists."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\ntags: [ai, agent]\n---\n\nBody.\n"
         metadata, body = parse_frontmatter(content)
@@ -62,7 +62,7 @@ class TestParseFrontmatter:
 
     def test_frontmatter_with_wikilink_values(self):
         """Parses frontmatter values that contain [[wikilinks]]."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = (
             '---\ncategories:\n  - "[[People]]"\n  - "[[Projects]]"\n---\n\nBody.\n'
@@ -77,7 +77,7 @@ class TestParseFrontmatter:
 
     def test_frontmatter_with_boolean_values(self):
         """Parses boolean values in frontmatter."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\npublished: true\ndraft: false\n---\n\nBody.\n"
         metadata, body = parse_frontmatter(content)
@@ -86,7 +86,7 @@ class TestParseFrontmatter:
 
     def test_frontmatter_with_numeric_values(self):
         """Parses numeric values in frontmatter."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\nversion: 3\nscore: 9.5\n---\n\nBody.\n"
         metadata, body = parse_frontmatter(content)
@@ -95,7 +95,7 @@ class TestParseFrontmatter:
 
     def test_empty_content(self):
         """Empty string returns empty dict and empty body."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, body = parse_frontmatter("")
         assert metadata == {}
@@ -103,7 +103,7 @@ class TestParseFrontmatter:
 
     def test_only_frontmatter_no_body(self):
         """Note with only frontmatter and no body content."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\ntitle: Metadata Only\n---\n"
         metadata, body = parse_frontmatter(content)
@@ -112,7 +112,7 @@ class TestParseFrontmatter:
 
     def test_unclosed_frontmatter(self):
         """Unclosed frontmatter (no closing ---) treats everything as body."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\ntitle: Broken\nstatus: oops\n\n# No Closing Fence\n"
         metadata, body = parse_frontmatter(content)
@@ -125,7 +125,7 @@ class TestParseFrontmatter:
 
     def test_frontmatter_with_empty_values(self):
         """Handles frontmatter keys with empty/null values."""
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         content = "---\ntitle:\ntags: []\n---\n\nBody.\n"
         metadata, body = parse_frontmatter(content)
@@ -141,7 +141,7 @@ class TestBuildNote:
 
     def test_build_with_frontmatter_and_body(self):
         """Builds a complete note with YAML frontmatter and body."""
-        from vault_cli.frontmatter import build_note
+        from vault_cli.core.frontmatter import build_note
 
         metadata = {"title": "Test Note", "status": "active"}
         body = "# Test Note\n\nBody content."
@@ -156,7 +156,7 @@ class TestBuildNote:
 
     def test_build_with_empty_frontmatter(self):
         """Building with empty frontmatter produces body only (no YAML block)."""
-        from vault_cli.frontmatter import build_note
+        from vault_cli.core.frontmatter import build_note
 
         body = "# Just Body\n\nNo frontmatter."
         result = build_note({}, body)
@@ -166,7 +166,7 @@ class TestBuildNote:
 
     def test_build_with_list_values(self):
         """Frontmatter lists are serialized correctly."""
-        from vault_cli.frontmatter import build_note
+        from vault_cli.core.frontmatter import build_note
 
         metadata = {"tags": ["ai", "agent", "python"]}
         body = "Body."
@@ -182,7 +182,7 @@ class TestBuildNote:
 
     def test_build_with_wikilink_values(self):
         """Frontmatter wikilink values are preserved."""
-        from vault_cli.frontmatter import build_note
+        from vault_cli.core.frontmatter import build_note
 
         metadata = {"categories": ["[[People]]", "[[Projects]]"]}
         body = "Body."
@@ -193,7 +193,7 @@ class TestBuildNote:
 
     def test_roundtrip_parse_build(self):
         """Parsing and rebuilding a note preserves key information."""
-        from vault_cli.frontmatter import parse_frontmatter, build_note
+        from vault_cli.core.frontmatter import parse_frontmatter, build_note
 
         original = (
             "---\n"
@@ -216,7 +216,7 @@ class TestBuildNote:
 
     def test_build_with_none_frontmatter(self):
         """Building with None frontmatter produces body only."""
-        from vault_cli.frontmatter import build_note
+        from vault_cli.core.frontmatter import build_note
 
         body = "Just body."
         result = build_note(None, body)
@@ -228,12 +228,12 @@ class TestSetProperty:
 
     def test_set_new_property_on_existing_frontmatter(self):
         """Adds a new property to existing frontmatter."""
-        from vault_cli.frontmatter import set_property
+        from vault_cli.core.frontmatter import set_property
 
         content = "---\ntitle: Test\n---\n\nBody.\n"
         result = set_property(content, "status", "active")
 
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, body = parse_frontmatter(result)
         assert metadata["status"] == "active"
@@ -241,24 +241,24 @@ class TestSetProperty:
 
     def test_update_existing_property(self):
         """Updates an existing property value."""
-        from vault_cli.frontmatter import set_property
+        from vault_cli.core.frontmatter import set_property
 
         content = "---\ntitle: Test\nstatus: draft\n---\n\nBody.\n"
         result = set_property(content, "status", "active")
 
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, _ = parse_frontmatter(result)
         assert metadata["status"] == "active"
 
     def test_set_property_on_note_without_frontmatter(self):
         """Creates frontmatter when setting a property on a note without one."""
-        from vault_cli.frontmatter import set_property
+        from vault_cli.core.frontmatter import set_property
 
         content = "# No Frontmatter\n\nJust body.\n"
         result = set_property(content, "status", "active")
 
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, body = parse_frontmatter(result)
         assert metadata["status"] == "active"
@@ -266,12 +266,12 @@ class TestSetProperty:
 
     def test_set_list_property(self):
         """Can set a property with a list value."""
-        from vault_cli.frontmatter import set_property
+        from vault_cli.core.frontmatter import set_property
 
         content = "---\ntitle: Test\n---\n\nBody.\n"
         result = set_property(content, "tags", ["ai", "python"])
 
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, _ = parse_frontmatter(result)
         assert isinstance(metadata["tags"], list)
@@ -283,12 +283,12 @@ class TestRemoveProperty:
 
     def test_remove_existing_property(self):
         """Removes a property that exists in frontmatter."""
-        from vault_cli.frontmatter import remove_property
+        from vault_cli.core.frontmatter import remove_property
 
         content = "---\ntitle: Test\nstatus: active\ntags:\n  - ai\n---\n\nBody.\n"
         result = remove_property(content, "status")
 
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, body = parse_frontmatter(result)
         assert "status" not in metadata
@@ -297,12 +297,12 @@ class TestRemoveProperty:
 
     def test_remove_nonexistent_property(self):
         """Removing a property that doesn't exist is a no-op."""
-        from vault_cli.frontmatter import remove_property
+        from vault_cli.core.frontmatter import remove_property
 
         content = "---\ntitle: Test\n---\n\nBody.\n"
         result = remove_property(content, "nonexistent")
 
-        from vault_cli.frontmatter import parse_frontmatter
+        from vault_cli.core.frontmatter import parse_frontmatter
 
         metadata, _ = parse_frontmatter(result)
         assert metadata["title"] == "Test"
@@ -310,7 +310,7 @@ class TestRemoveProperty:
 
     def test_remove_from_note_without_frontmatter(self):
         """Removing a property from a note without frontmatter is a no-op."""
-        from vault_cli.frontmatter import remove_property
+        from vault_cli.core.frontmatter import remove_property
 
         content = "# No Frontmatter\n\nJust body.\n"
         result = remove_property(content, "status")

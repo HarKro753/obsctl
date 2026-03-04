@@ -1,4 +1,4 @@
-"""Tests for vault_cli.index — In-memory vault index.
+"""Tests for vault_cli.core.index — In-memory vault index.
 
 Tests use a small set of interconnected notes with known wikilinks, tags, and properties
 to verify graph operations.
@@ -134,7 +134,7 @@ def notes():
 @pytest.fixture
 def index(notes):
     """Build and return a VaultIndex from the test notes."""
-    from vault_cli.index import VaultIndex
+    from vault_cli.core.index import VaultIndex
 
     idx = VaultIndex()
     idx.build(notes)
@@ -151,7 +151,7 @@ class TestBuildIndex:
 
     def test_build_populates_notes(self, notes):
         """After build, all notes are indexed."""
-        from vault_cli.index import VaultIndex
+        from vault_cli.core.index import VaultIndex
 
         idx = VaultIndex()
         idx.build(notes)
@@ -180,7 +180,7 @@ class TestBuildIndex:
 
     def test_build_with_empty_list(self):
         """Building with no notes creates an empty index."""
-        from vault_cli.index import VaultIndex
+        from vault_cli.core.index import VaultIndex
 
         idx = VaultIndex()
         idx.build([])

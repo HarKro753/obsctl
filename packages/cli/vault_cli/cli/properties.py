@@ -3,7 +3,7 @@
 import click
 
 from vault_cli.cli.helpers import get_client, output, resolve_file
-from vault_cli.frontmatter import parse_frontmatter, set_property, remove_property
+from vault_cli.core.frontmatter import parse_frontmatter, set_property, remove_property
 
 
 @click.command()

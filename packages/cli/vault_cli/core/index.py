@@ -2,8 +2,8 @@
 
 import os
 
-from vault_cli.wikilinks import extract_wikilinks
-from vault_cli.frontmatter import parse_frontmatter
+from vault_cli.core.wikilinks import extract_wikilinks
+from vault_cli.core.frontmatter import parse_frontmatter
 
 
 class VaultIndex:

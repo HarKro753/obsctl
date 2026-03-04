@@ -5,8 +5,8 @@ import sys
 
 import click
 
-from vault_cli.config import load_config
-from vault_cli.client import VaultClient
+from vault_cli.core.config import load_config
+from vault_cli.core.client import VaultClient
 
 
 def get_client():

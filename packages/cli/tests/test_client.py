@@ -1,4 +1,4 @@
-"""Tests for vault_cli.client.VaultClient.
+"""Tests for vault_cli.core.client.VaultClient.
 
 All HTTP interactions are mocked at the requests level.
 These tests define the contract that the VaultClient implementation must satisfy.
@@ -46,7 +46,7 @@ class TestPathToId:
 
     def test_lowercases_path(self):
         """Path is lowercased for the document ID."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         assert (
@@ -56,14 +56,14 @@ class TestPathToId:
 
     def test_handles_root_level_path(self):
         """Root-level paths are just lowercased."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         assert client._path_to_id("North Star.md") == "north star.md"
 
     def test_underscore_prefix_gets_slash(self):
         """Paths starting with underscore get a leading slash to avoid CouchDB reserved _id prefix."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         result = client._path_to_id("_templates/test.md")
@@ -71,7 +71,7 @@ class TestPathToId:
 
     def test_non_underscore_prefix_no_slash(self):
         """Normal paths do not get a leading slash."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         result = client._path_to_id("inbox/note.md")
@@ -79,7 +79,7 @@ class TestPathToId:
 
     def test_deeply_nested_path(self):
         """Deeply nested paths are fully lowercased."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         assert client._path_to_id("A/B/C/D.md") == "a/b/c/d.md"
@@ -95,7 +95,7 @@ class TestCreateChunkId:
 
     def test_produces_h_prefix(self):
         """Chunk IDs start with 'h:'."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         result = client._create_chunk_id("hello world")
@@ -103,7 +103,7 @@ class TestCreateChunkId:
 
     def test_uses_first_12_hex_chars_of_sha256(self):
         """Chunk ID is h: + first 12 hex chars of SHA-256 of the data."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         data = "hello world"
@@ -112,7 +112,7 @@ class TestCreateChunkId:
 
     def test_different_data_produces_different_ids(self):
         """Different content produces different chunk IDs."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         id1 = client._create_chunk_id("content A")
@@ -121,7 +121,7 @@ class TestCreateChunkId:
 
     def test_same_data_produces_same_id(self):
         """Identical content produces the same chunk ID (content-addressed)."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         id1 = client._create_chunk_id("same content")
@@ -130,7 +130,7 @@ class TestCreateChunkId:
 
     def test_empty_string(self):
         """Empty string still produces a valid chunk ID."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         result = client._create_chunk_id("")
@@ -148,7 +148,7 @@ class TestCreateChunks:
 
     def test_small_content_single_chunk(self):
         """Content under 50KB produces a single chunk."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         content = "Short content"
@@ -158,7 +158,7 @@ class TestCreateChunks:
 
     def test_empty_content_produces_one_empty_chunk(self):
         """Empty content produces one chunk with empty string."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         chunks = client._create_chunks("")
@@ -167,7 +167,7 @@ class TestCreateChunks:
 
     def test_large_content_splits_at_50kb(self):
         """Content over 50KB is split into multiple chunks."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         # Create content just over 100KB (will need 3 chunks)
@@ -180,7 +180,7 @@ class TestCreateChunks:
 
     def test_exact_boundary_produces_correct_chunks(self):
         """Content exactly at boundary doesn't produce empty trailing chunk."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         content = "x" * 50_000
@@ -189,7 +189,7 @@ class TestCreateChunks:
 
     def test_joined_chunks_equal_original(self):
         """Joining all chunks reproduces the original content."""
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient.__new__(VaultClient)
         content = "a" * 75_000 + "b" * 75_000
@@ -205,7 +205,7 @@ class TestCreateChunks:
 class TestPing:
     """VaultClient.ping() tests CouchDB connectivity."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_ping_success(self, mock_requests):
         """ping() returns dict with ok=True when server is reachable."""
         mock_session = MagicMock()
@@ -214,7 +214,7 @@ class TestPing:
             200, {"db_name": "obsidian", "doc_count": 42}
         )
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(
             host="localhost",
@@ -226,7 +226,7 @@ class TestPing:
         result = client.ping()
         assert result["ok"] is True
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_ping_connection_refused(self, mock_requests):
         """ping() raises/returns error when connection is refused."""
         import requests as real_requests
@@ -237,7 +237,7 @@ class TestPing:
             "Connection refused"
         )
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(
             host="localhost",
@@ -256,7 +256,7 @@ class TestPing:
             or "connection" in str(exc_info.value).lower()
         )
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_ping_unauthorized(self, mock_requests):
         """ping() raises error on 401 with auth failure message."""
         mock_session = MagicMock()
@@ -264,7 +264,7 @@ class TestPing:
         resp = _make_response(401, {"error": "unauthorized"})
         mock_session.get.return_value = resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(
             host="localhost",
@@ -282,7 +282,7 @@ class TestPing:
             or "unauthorized" in error_msg
         )
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_ping_database_not_found(self, mock_requests):
         """ping() raises error on 404 with database-not-found message."""
         mock_session = MagicMock()
@@ -290,7 +290,7 @@ class TestPing:
         resp = _make_response(404, {"error": "not_found"})
         mock_session.get.return_value = resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(
             host="localhost",
@@ -313,7 +313,7 @@ class TestPing:
 class TestListNotes:
     """VaultClient.list_notes() returns note metadata, filtering out non-note docs."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_filters_chunk_documents(self, mock_requests):
         """Chunk documents (h:*) are excluded from the listing."""
         mock_session = MagicMock()
@@ -336,7 +336,7 @@ class TestListNotes:
         ]
         mock_session.get.return_value = _make_response(200, {"rows": rows})
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         notes = client.list_notes()
@@ -345,7 +345,7 @@ class TestListNotes:
         assert "Note.md" in paths
         assert not any("h:" in n.get("id", "") for n in notes)
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_filters_system_documents(self, mock_requests):
         """System documents (_design/*, etc.) are excluded."""
         mock_session = MagicMock()
@@ -365,14 +365,14 @@ class TestListNotes:
         ]
         mock_session.get.return_value = _make_response(200, {"rows": rows})
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         notes = client.list_notes()
         assert len(notes) == 1
         assert notes[0]["path"] == "Note.md"
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_filters_deleted_documents(self, mock_requests):
         """Soft-deleted documents are excluded."""
         mock_session = MagicMock()
@@ -401,14 +401,14 @@ class TestListNotes:
         ]
         mock_session.get.return_value = _make_response(200, {"rows": rows})
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         notes = client.list_notes()
         assert len(notes) == 1
         assert notes[0]["path"] == "Active.md"
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_filters_livesync_version_doc(self, mock_requests):
         """The obsydian_livesync_version document is excluded."""
         mock_session = MagicMock()
@@ -431,13 +431,13 @@ class TestListNotes:
         ]
         mock_session.get.return_value = _make_response(200, {"rows": rows})
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         notes = client.list_notes()
         assert len(notes) == 1
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_returns_path_id_mtime_size(self, mock_requests):
         """Each listed note includes path, id, mtime, and size."""
         mock_session = MagicMock()
@@ -456,7 +456,7 @@ class TestListNotes:
         ]
         mock_session.get.return_value = _make_response(200, {"rows": rows})
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         notes = client.list_notes()
@@ -476,7 +476,7 @@ class TestListNotes:
 class TestReadNote:
     """VaultClient.read_note() fetches metadata + content chunks and joins them."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_reads_single_chunk_note(self, mock_requests):
         """Reads a note with a single content chunk."""
         mock_session = MagicMock()
@@ -510,7 +510,7 @@ class TestReadNote:
         # First GET is for metadata, second for chunk
         mock_session.get.side_effect = [metadata_resp, chunk_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.read_note("Note.md")
@@ -519,7 +519,7 @@ class TestReadNote:
         assert result["content"] == content
         assert result["path"] == "Note.md"
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_reads_multi_chunk_note(self, mock_requests):
         """Reads a note split across multiple content chunks and joins them in order."""
         mock_session = MagicMock()
@@ -552,14 +552,14 @@ class TestReadNote:
 
         mock_session.get.side_effect = [metadata_resp, chunk_resp_1, chunk_resp_2]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.read_note("Note.md")
 
         assert result["content"] == "First part. Second part."
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_returns_none_for_missing_note(self, mock_requests):
         """Returns None when note does not exist (404)."""
         mock_session = MagicMock()
@@ -568,14 +568,14 @@ class TestReadNote:
         resp = _make_response(404, {"error": "not_found"})
         mock_session.get.return_value = resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.read_note("nonexistent.md")
 
         assert result is None
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_includes_metadata_fields(self, mock_requests):
         """Returned dict includes ctime, mtime, and path."""
         mock_session = MagicMock()
@@ -602,7 +602,7 @@ class TestReadNote:
         )
         mock_session.get.side_effect = [metadata_resp, chunk_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.read_note("Note.md")
@@ -619,7 +619,7 @@ class TestReadNote:
 class TestWriteNote:
     """VaultClient.write_note() creates chunk(s) and metadata document."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_creates_chunk_with_sha256_id(self, mock_requests):
         """Chunk is created with h: + SHA-256 prefix as its ID."""
         mock_session = MagicMock()
@@ -644,7 +644,7 @@ class TestWriteNote:
         mock_session.get.side_effect = [not_found_resp, chunk_not_found]
         mock_session.put.side_effect = [chunk_put_resp, meta_put_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.write_note("New Note.md", content)
@@ -661,7 +661,7 @@ class TestWriteNote:
             put_calls[0]
         )
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_creates_metadata_with_children_array(self, mock_requests):
         """Metadata document is created with children array pointing to chunk(s)."""
         mock_session = MagicMock()
@@ -682,13 +682,13 @@ class TestWriteNote:
         mock_session.get.side_effect = [not_found_resp, chunk_not_found]
         mock_session.put.side_effect = [chunk_put_resp, meta_put_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.write_note("Hello.md", content)
         assert result["ok"] is True
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_handles_existing_doc_with_rev(self, mock_requests):
         """When updating an existing note, includes _rev in the metadata write."""
         mock_session = MagicMock()
@@ -722,7 +722,7 @@ class TestWriteNote:
         mock_session.get.side_effect = [existing_resp, chunk_not_found]
         mock_session.put.side_effect = [chunk_put_resp, meta_put_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.write_note("Note.md", content)
@@ -739,7 +739,7 @@ class TestWriteNote:
         if put_data:
             assert put_data.get("_rev") == "3-existing"
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_preserves_ctime_on_update(self, mock_requests):
         """When updating, ctime is preserved from the original document."""
         mock_session = MagicMock()
@@ -770,7 +770,7 @@ class TestWriteNote:
         mock_session.get.side_effect = [existing_resp, chunk_not_found]
         mock_session.put.side_effect = [chunk_put_resp, meta_put_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         client.write_note("Note.md", content)
@@ -782,7 +782,7 @@ class TestWriteNote:
         if put_data:
             assert put_data.get("ctime") == 5000
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_skips_chunk_creation_if_exists(self, mock_requests):
         """If the chunk already exists (content-addressed), it's not re-created."""
         mock_session = MagicMock()
@@ -805,7 +805,7 @@ class TestWriteNote:
         mock_session.get.side_effect = [not_found_resp, chunk_exists_resp]
         mock_session.put.side_effect = [meta_put_resp]
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.write_note("Note.md", content)
@@ -823,7 +823,7 @@ class TestWriteNote:
 class TestDeleteNote:
     """VaultClient.delete_note() performs a LiveSync-compatible soft-delete."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_sets_deleted_true(self, mock_requests):
         """Soft-delete sets deleted=true on the document."""
         mock_session = MagicMock()
@@ -847,7 +847,7 @@ class TestDeleteNote:
         mock_session.get.return_value = existing_resp
         mock_session.put.return_value = put_resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         result = client.delete_note("Note.md")
@@ -858,7 +858,7 @@ class TestDeleteNote:
         )
         assert put_data["deleted"] is True
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_clears_children(self, mock_requests):
         """Soft-delete clears the children array."""
         mock_session = MagicMock()
@@ -882,7 +882,7 @@ class TestDeleteNote:
         mock_session.get.return_value = existing_resp
         mock_session.put.return_value = put_resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         client.delete_note("Note.md")
@@ -892,7 +892,7 @@ class TestDeleteNote:
         )
         assert put_data["children"] == []
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_clears_data(self, mock_requests):
         """Soft-delete clears the data field."""
         mock_session = MagicMock()
@@ -917,7 +917,7 @@ class TestDeleteNote:
         mock_session.get.return_value = existing_resp
         mock_session.put.return_value = put_resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         client.delete_note("Note.md")
@@ -927,7 +927,7 @@ class TestDeleteNote:
         )
         assert put_data.get("data", "") == ""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_does_not_use_couchdb_destroy(self, mock_requests):
         """Soft-delete uses PUT (update), not DELETE (destroy)."""
         mock_session = MagicMock()
@@ -951,7 +951,7 @@ class TestDeleteNote:
         mock_session.get.return_value = existing_resp
         mock_session.put.return_value = put_resp
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
         client.delete_note("Note.md")
@@ -969,13 +969,13 @@ class TestDeleteNote:
 class TestMoveNote:
     """VaultClient.move_note() reads from old path, writes to new path, deletes old."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_move_reads_writes_deletes(self, mock_requests):
         """move_note performs read, write, delete in sequence."""
         mock_session = MagicMock()
         mock_requests.Session.return_value = mock_session
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
 
@@ -1007,13 +1007,13 @@ class TestMoveNote:
             )
             mock_delete.assert_called_once_with("Draft.md")
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_move_raises_if_source_not_found(self, mock_requests):
         """move_note raises an error if the source note doesn't exist."""
         mock_session = MagicMock()
         mock_requests.Session.return_value = mock_session
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
 
@@ -1033,13 +1033,13 @@ class TestMoveNote:
 class TestSearchNotes:
     """VaultClient.search_notes() filters notes by path (case-insensitive)."""
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_case_insensitive_path_search(self, mock_requests):
         """Search is case-insensitive on note paths."""
         mock_session = MagicMock()
         mock_requests.Session.return_value = mock_session
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
 
@@ -1069,13 +1069,13 @@ class TestSearchNotes:
             assert len(results) == 1
             assert results[0]["path"] == "References/Agent Loop.md"
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_search_returns_multiple_matches(self, mock_requests):
         """Search returns all matching notes."""
         mock_session = MagicMock()
         mock_requests.Session.return_value = mock_session
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
 
@@ -1104,13 +1104,13 @@ class TestSearchNotes:
             results = client.search_notes("references")
             assert len(results) == 2
 
-    @patch("vault_cli.client.requests")
+    @patch("vault_cli.core.client.requests")
     def test_search_no_matches(self, mock_requests):
         """Search returns empty list when nothing matches."""
         mock_session = MagicMock()
         mock_requests.Session.return_value = mock_session
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(host="localhost", port=5984, database="obsidian")
 

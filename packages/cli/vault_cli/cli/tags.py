@@ -49,7 +49,7 @@ def tag(name, verbose, json_mode):
     client = get_client()
     index = _load_index(client)
 
-    from vault_cli.frontmatter import parse_frontmatter
+    from vault_cli.core.frontmatter import parse_frontmatter
 
     matching = []
     for path, content in index.notes.items():

@@ -63,7 +63,7 @@ def config_show(json_mode):
 @click.argument("value")
 def config_set(key, value):
     """Set a configuration value (e.g. vault.host myserver.com)."""
-    from vault_cli.config import load_config, save_config, GLOBAL_CONFIG_PATH
+    from vault_cli.core.config import load_config, save_config, GLOBAL_CONFIG_PATH
     import os
     import json
 

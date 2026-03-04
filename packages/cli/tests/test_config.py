@@ -1,4 +1,4 @@
-"""Tests for vault_cli.config — Configuration loading.
+"""Tests for vault_cli.core.config — Configuration loading.
 
 Tests cover file loading, environment variable overrides, defaults, and error handling.
 """
@@ -16,9 +16,9 @@ class TestConfigDefaults:
 
     def test_missing_config_uses_defaults(self):
         """When no config file exists, default values are used."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
-        with patch("vault_cli.config.os.path.exists", return_value=False):
+        with patch("vault_cli.core.config.os.path.exists", return_value=False):
             config = load_config()
 
         assert config["vault"]["host"] == "localhost"
@@ -28,18 +28,18 @@ class TestConfigDefaults:
 
     def test_default_templates_folder(self):
         """Default templates folder is 'Templates'."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
-        with patch("vault_cli.config.os.path.exists", return_value=False):
+        with patch("vault_cli.core.config.os.path.exists", return_value=False):
             config = load_config()
 
         assert config.get("templates_folder") == "Templates"
 
     def test_default_output_format(self):
         """Default output format is 'text'."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
-        with patch("vault_cli.config.os.path.exists", return_value=False):
+        with patch("vault_cli.core.config.os.path.exists", return_value=False):
             config = load_config()
 
         assert config.get("output_format") == "text"
@@ -50,7 +50,7 @@ class TestConfigFromFile:
 
     def test_load_from_explicit_path(self):
         """Loads config from an explicitly provided path."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         config_data = {
             "vault": {
@@ -83,7 +83,7 @@ class TestConfigFromFile:
 
     def test_load_from_default_path(self):
         """Loads config from ~/.vault-cli/config.json if it exists."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         config_data = {
             "vault": {
@@ -106,7 +106,7 @@ class TestConfigFromFile:
 
     def test_invalid_json_raises_error(self):
         """Invalid JSON in config file raises an error."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("{not valid json!!!")
@@ -121,7 +121,7 @@ class TestConfigFromFile:
 
     def test_partial_config_merged_with_defaults(self):
         """A config file with only some values gets defaults for the rest."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         config_data = {
             "vault": {
@@ -149,10 +149,10 @@ class TestConfigEnvOverrides:
 
     def test_vault_host_env_override(self):
         """VAULT_HOST env var overrides config file host."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with (
-            patch("vault_cli.config.os.path.exists", return_value=False),
+            patch("vault_cli.core.config.os.path.exists", return_value=False),
             patch.dict(os.environ, {"VAULT_HOST": "env-host.example.com"}, clear=False),
         ):
             config = load_config()
@@ -160,10 +160,10 @@ class TestConfigEnvOverrides:
 
     def test_vault_port_env_override(self):
         """VAULT_PORT env var overrides config file port."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with (
-            patch("vault_cli.config.os.path.exists", return_value=False),
+            patch("vault_cli.core.config.os.path.exists", return_value=False),
             patch.dict(os.environ, {"VAULT_PORT": "443"}, clear=False),
         ):
             config = load_config()
@@ -171,10 +171,10 @@ class TestConfigEnvOverrides:
 
     def test_vault_database_env_override(self):
         """VAULT_DATABASE env var overrides config file database."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with (
-            patch("vault_cli.config.os.path.exists", return_value=False),
+            patch("vault_cli.core.config.os.path.exists", return_value=False),
             patch.dict(os.environ, {"VAULT_DATABASE": "custom_db"}, clear=False),
         ):
             config = load_config()
@@ -182,10 +182,10 @@ class TestConfigEnvOverrides:
 
     def test_vault_username_env_override(self):
         """VAULT_USERNAME env var overrides config file username."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with (
-            patch("vault_cli.config.os.path.exists", return_value=False),
+            patch("vault_cli.core.config.os.path.exists", return_value=False),
             patch.dict(os.environ, {"VAULT_USERNAME": "env_user"}, clear=False),
         ):
             config = load_config()
@@ -193,10 +193,10 @@ class TestConfigEnvOverrides:
 
     def test_vault_password_env_override(self):
         """VAULT_PASSWORD env var overrides config file password."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with (
-            patch("vault_cli.config.os.path.exists", return_value=False),
+            patch("vault_cli.core.config.os.path.exists", return_value=False),
             patch.dict(os.environ, {"VAULT_PASSWORD": "env_secret"}, clear=False),
         ):
             config = load_config()
@@ -204,10 +204,10 @@ class TestConfigEnvOverrides:
 
     def test_vault_protocol_env_override(self):
         """VAULT_PROTOCOL env var overrides config file protocol."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         with (
-            patch("vault_cli.config.os.path.exists", return_value=False),
+            patch("vault_cli.core.config.os.path.exists", return_value=False),
             patch.dict(os.environ, {"VAULT_PROTOCOL": "https"}, clear=False),
         ):
             config = load_config()
@@ -215,7 +215,7 @@ class TestConfigEnvOverrides:
 
     def test_env_overrides_file_values(self):
         """Env vars take precedence over config file values."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         config_data = {
             "vault": {
@@ -245,7 +245,7 @@ class TestConfigMerge:
 
     def test_local_overrides_global(self):
         """Local config (.vault-cli.json) overrides global (~/.vault-cli/config.json)."""
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         global_config = {
             "vault": {

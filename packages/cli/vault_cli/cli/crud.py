@@ -105,7 +105,7 @@ def create(name, content, folder, template, json_mode, dry_run):
 
     # If template specified, read it and use as base content
     if template:
-        from vault_cli.config import load_config
+        from vault_cli.core.config import load_config
 
         config = load_config()
         templates_folder = config.get("templates_folder", "Templates")

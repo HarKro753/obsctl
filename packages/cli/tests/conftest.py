@@ -208,11 +208,11 @@ def mock_vault_client():
     Returns a tuple of (client, mock_session) where mock_session is the
     mocked requests.Session so tests can configure responses.
     """
-    with patch("vault_cli.client.requests") as mock_requests:
+    with patch("vault_cli.core.client.requests") as mock_requests:
         mock_session = MagicMock()
         mock_requests.Session.return_value = mock_session
 
-        from vault_cli.client import VaultClient
+        from vault_cli.core.client import VaultClient
 
         client = VaultClient(
             host="localhost",

@@ -7,7 +7,7 @@ from vault_cli.cli.helpers import get_client, output
 
 def _load_index(client):
     """Load all notes and build the in-memory index."""
-    from vault_cli.index import VaultIndex
+    from vault_cli.core.index import VaultIndex
 
     notes_meta = client.list_notes()
     notes = []
