@@ -1,8 +1,8 @@
 [project]
 name = "obsidian-vault-cli"
-version = "0.2.0"
+version = "0.2.1"
 description = "Obsidian vault CLI via CouchDB/LiveSync — read, write, search, graph traversal, tags, properties"
-readme = "SPEC.md"
+readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 classifiers = [

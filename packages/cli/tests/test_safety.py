@@ -798,8 +798,8 @@ class TestWrappedErrors:
 
 
 class TestVersion:
-    def test_version_is_020(self, runner):
-        """Version should be 0.2.0 after safety features."""
+    def test_version_is_021(self, runner):
+        """Version should be 0.2.1."""
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert "0.2.0" in result.output
+        assert "0.2.1" in result.output
