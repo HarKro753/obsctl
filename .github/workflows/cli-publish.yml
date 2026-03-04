@@ -1,0 +1,69 @@
+name: Publish CLI to PyPI
+
+on:
+  release:
+    types: [published]
+
+# Only trigger for releases tagged like cli-v*
+# e.g. cli-v0.2.0
+# Create releases via: gh release create cli-v0.2.0 --title "CLI v0.2.0" --notes "..."
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install and test
+        working-directory: packages/cli
+        run: |
+          pip install -e ".[dev]"
+          pytest tests/ -v --tb=short
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build sdist and wheel
+        working-directory: packages/cli
+        run: python -m build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: packages/cli/dist/
+
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.release.tag_name, 'cli-v')
+    environment: pypi
+    permissions:
+      id-token: write  # Required for trusted publishing
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses Trusted Publishers — no API token needed.
+        # Set up at: https://pypi.org/manage/project/obsidian-vault-cli/settings/publishing/
