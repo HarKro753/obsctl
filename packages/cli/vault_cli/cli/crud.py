@@ -1,7 +1,10 @@
 """CRUD commands: read, create, write, append, prepend, delete, move, rename."""
 
+import difflib
+
 import click
 
+from vault_cli.cli.errors import handle_write_error, handle_delete_error
 from vault_cli.cli.helpers import get_client, output, resolve_file
 
 
@@ -24,9 +27,22 @@ def read(file_name, file_path, json_mode):
     else:
         path = resolve_file(client, file_name)
 
-    note = client.read_note(path)
+    try:
+        note = client.read_note(path)
+    except ConnectionError as e:
+        click.echo(f'Error reading "{path}":\n  {e}\n  Check: vault ping', err=True)
+        raise SystemExit(1)
+    except Exception as e:
+        click.echo(f'Error reading "{path}":\n  {e}', err=True)
+        raise SystemExit(1)
+
     if note is None:
-        click.echo(f"Note not found: {path}", err=True)
+        click.echo(
+            f'Error reading "{path}":\n'
+            f"  Note not found.\n"
+            f'  Use `vault files` to browse, or `vault search query="{path.rsplit("/", 1)[-1].replace(".md", "")}"` to find it.',
+            err=True,
+        )
         raise SystemExit(1)
 
     if json_mode:
@@ -49,7 +65,8 @@ def read(file_name, file_path, json_mode):
 @click.option("--folder", default=None, help="Target folder (e.g. References)")
 @click.option("--template", default=None, help="Template name to use")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def create(name, content, folder, template, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without writing")
+def create(name, content, folder, template, json_mode, dry_run):
     """Create a new note."""
     client = get_client()
 
@@ -60,6 +77,31 @@ def create(name, content, folder, template, json_mode):
         path = f"{folder}/{name}"
     else:
         path = name
+
+    # Check if note already exists — by exact path or by name in vault
+    existing = client.read_note(path)
+    if existing is not None:
+        click.echo(
+            f"Note already exists: {path}\n"
+            f'Use `vault write --path "{path}" --force` to overwrite.\n'
+            f"Aborted.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    # Also check by basename across all notes (like wikilink resolution)
+    name_lower = name.lower()
+    for note in client.list_notes():
+        note_path = note["path"]
+        basename = note_path.rsplit("/", 1)[-1] if "/" in note_path else note_path
+        if basename.lower() == name_lower:
+            click.echo(
+                f"Note already exists: {note_path}\n"
+                f'Use `vault write --path "{note_path}" --force` to overwrite.\n'
+                f"Aborted.",
+                err=True,
+            )
+            raise SystemExit(1)
 
     # If template specified, read it and use as base content
     if template:
@@ -78,7 +120,14 @@ def create(name, content, folder, template, json_mode):
             click.echo(f"Template not found: {template}", err=True)
             raise SystemExit(1)
 
-    result = client.write_note(path, content)
+    if dry_run:
+        click.echo(f"Would create: {path} ({len(content)} chars)")
+        return
+
+    try:
+        result = client.write_note(path, content)
+    except Exception as e:
+        handle_write_error(path, e)
 
     if json_mode:
         output(result, json_mode=True)
@@ -89,11 +138,95 @@ def create(name, content, folder, template, json_mode):
 @click.command("write")
 @click.option("--path", "file_path", required=True, help="Exact path from vault root")
 @click.option("--content", required=True, help="Note content")
+@click.option("--force", is_flag=True, help="Overwrite existing note without prompt")
+@click.option(
+    "--diff", "show_diff", is_flag=True, help="Show unified diff of changes, no write"
+)
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def write_cmd(file_path, content, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without writing")
+def write_cmd(file_path, content, force, show_diff, json_mode, dry_run):
     """Write content to a note (create or overwrite)."""
     client = get_client()
-    result = client.write_note(file_path, content)
+
+    # Check if doc already exists
+    existing = client.read_note(file_path)
+
+    if existing is not None:
+        existing_content = existing["content"]
+        existing_size = len(existing_content)
+        is_deleted = existing.get("metadata", {}).get("deleted", False)
+
+        # --diff: show what would change, then exit
+        if show_diff:
+            old_lines = existing_content.splitlines(keepends=True)
+            new_lines = content.splitlines(keepends=True)
+            diff = difflib.unified_diff(
+                old_lines,
+                new_lines,
+                fromfile=f"a/{file_path}",
+                tofile=f"b/{file_path}",
+            )
+            diff_text = "".join(diff)
+            if diff_text:
+                click.echo(diff_text)
+            else:
+                click.echo("No changes.")
+            return
+
+        # --dry-run: show what would happen
+        if dry_run:
+            click.echo(
+                f"Would write {len(content)} chars to {file_path} "
+                f"(currently {existing_size} chars)"
+            )
+            return
+
+        # deleted:true detection
+        if is_deleted:
+            if not force:
+                click.echo(
+                    f"Warning: note exists but is marked deleted in CouchDB.\n"
+                    f"Writing will restore it. Use --force to proceed.\n"
+                    f"Aborted.",
+                    err=True,
+                )
+                raise SystemExit(1)
+
+        # Refuse silent overwrite without --force
+        if not force:
+            click.echo(
+                f"Note already exists ({existing_size} chars).\n"
+                f"Use --force to overwrite, or --diff to preview changes.\n"
+                f"Aborted.",
+                err=True,
+            )
+            raise SystemExit(1)
+    else:
+        # New note
+        if show_diff:
+            # Show all content as additions
+            new_lines = content.splitlines(keepends=True)
+            diff = difflib.unified_diff(
+                [],
+                new_lines,
+                fromfile="/dev/null",
+                tofile=f"b/{file_path}",
+            )
+            diff_text = "".join(diff)
+            if diff_text:
+                click.echo(diff_text)
+            else:
+                click.echo(f"New file: {file_path} ({len(content)} chars)")
+            return
+
+        if dry_run:
+            click.echo(f"Would write {len(content)} chars to {file_path} (new file)")
+            return
+
+    try:
+        result = client.write_note(file_path, content)
+    except Exception as e:
+        handle_write_error(file_path, e)
 
     if json_mode:
         output(result, json_mode=True)
@@ -106,7 +239,8 @@ def write_cmd(file_path, content, json_mode):
 @click.option("--content", required=True, help="Content to append")
 @click.option("--inline", is_flag=True, help="No newline separator")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def append(file_name, content, inline, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without writing")
+def append(file_name, content, inline, json_mode, dry_run):
     """Append content to an existing note."""
     client = get_client()
     path = resolve_file(client, file_name)
@@ -118,7 +252,15 @@ def append(file_name, content, inline, json_mode):
 
     separator = "" if inline else "\n"
     new_content = note["content"] + separator + content
-    result = client.write_note(path, new_content)
+
+    if dry_run:
+        click.echo(f"Would append {len(content)} chars to: {path}")
+        return
+
+    try:
+        result = client.write_note(path, new_content)
+    except Exception as e:
+        handle_write_error(path, e)
 
     if json_mode:
         output(result, json_mode=True)
@@ -130,7 +272,8 @@ def append(file_name, content, inline, json_mode):
 @click.option("--file", "file_name", required=True, help="Note name")
 @click.option("--content", required=True, help="Content to prepend")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def prepend(file_name, content, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without writing")
+def prepend(file_name, content, json_mode, dry_run):
     """Prepend content to an existing note."""
     client = get_client()
     path = resolve_file(client, file_name)
@@ -141,7 +284,15 @@ def prepend(file_name, content, json_mode):
         raise SystemExit(1)
 
     new_content = content + "\n" + note["content"]
-    result = client.write_note(path, new_content)
+
+    if dry_run:
+        click.echo(f"Would prepend {len(content)} chars to: {path}")
+        return
+
+    try:
+        result = client.write_note(path, new_content)
+    except Exception as e:
+        handle_write_error(path, e)
 
     if json_mode:
         output(result, json_mode=True)
@@ -151,13 +302,28 @@ def prepend(file_name, content, json_mode):
 
 @click.command("delete")
 @click.option("--file", "file_name", required=True, help="Note name")
+@click.option("--yes", is_flag=True, help="Skip confirmation prompt")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def delete_cmd(file_name, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without deleting")
+def delete_cmd(file_name, yes, json_mode, dry_run):
     """Delete a note (soft-delete, LiveSync compatible)."""
     client = get_client()
     path = resolve_file(client, file_name)
 
-    result = client.delete_note(path)
+    if dry_run:
+        click.echo(f"Would soft-delete: {path}")
+        return
+
+    if not yes:
+        confirmed = click.confirm(f'Delete "{path}"?', default=False)
+        if not confirmed:
+            click.echo("Aborted.")
+            return
+
+    try:
+        result = client.delete_note(path)
+    except Exception as e:
+        handle_delete_error(path, e)
 
     if json_mode:
         output(result, json_mode=True)
@@ -169,10 +335,15 @@ def delete_cmd(file_name, json_mode):
 @click.option("--file", "file_name", required=True, help="Source note name")
 @click.option("--to", "to_path", required=True, help="Destination path")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def move(file_name, to_path, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without moving")
+def move(file_name, to_path, json_mode, dry_run):
     """Move a note to a new path."""
     client = get_client()
     path = resolve_file(client, file_name)
+
+    if dry_run:
+        click.echo(f"Would move: {path} -> {to_path}")
+        return
 
     result = client.move_note(path, to_path)
 
@@ -186,7 +357,8 @@ def move(file_name, to_path, json_mode):
 @click.option("--file", "file_name", required=True, help="Note name")
 @click.option("--name", "new_name", required=True, help="New name")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def rename(file_name, new_name, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would happen without renaming")
+def rename(file_name, new_name, json_mode, dry_run):
     """Rename a note (keeps same folder)."""
     client = get_client()
     path = resolve_file(client, file_name)
@@ -200,6 +372,10 @@ def rename(file_name, new_name, json_mode):
 
     if not new_path.endswith(".md"):
         new_path += ".md"
+
+    if dry_run:
+        click.echo(f"Would rename: {path} -> {new_path}")
+        return
 
     result = client.move_note(path, new_path)
 

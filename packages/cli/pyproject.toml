@@ -1,6 +1,6 @@
 [project]
 name = "obsidian-vault-cli"
-version = "0.1.0"
+version = "0.2.0"
 description = "Obsidian vault CLI via CouchDB/LiveSync"
 readme = "README.md"
 license = {text = "MIT"}

@@ -22,18 +22,18 @@ All packages share the same underlying model: your vault lives in CouchDB via [S
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`packages/cli`](packages/cli) | Python CLI — read, write, search, graph traversal, tags, properties |
-| [`packages/plugin`](packages/plugin) | Obsidian plugin — Google Sign-In replaces manual CouchDB setup |
-| [`packages/backend`](packages/backend) | FastAPI service — provisions a CouchDB vault per user, issues JWTs |
+| Package                                | Description                                                         |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| [`packages/cli`](packages/cli)         | Python CLI — read, write, search, graph traversal, tags, properties |
+| [`packages/plugin`](packages/plugin)   | Obsidian plugin — Google Sign-In replaces manual CouchDB setup      |
+| [`packages/backend`](packages/backend) | FastAPI service — provisions a CouchDB vault per user, issues JWTs  |
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
+| Skill                                            | Description                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
 | [`skills/obsidian-vault`](skills/obsidian-vault) | Vault design system for agents — structure, properties, linking, retrieval |
-| [`skills/obsidian-cli`](skills/obsidian-cli) | How agents use the `vault` CLI — commands, patterns, safety flags |
+| [`skills/obsidian-cli`](skills/obsidian-cli)     | How agents use the `vault` CLI — commands, patterns, safety flags          |
 
 ---
 

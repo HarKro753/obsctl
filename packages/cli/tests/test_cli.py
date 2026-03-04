@@ -140,7 +140,7 @@ class TestVersionAndHelp:
     def test_version(self, runner):
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.0" in result.output
+        assert "0.2.0" in result.output
 
     def test_help(self, runner):
         result = runner.invoke(cli, ["--help"])
@@ -367,7 +367,7 @@ class TestDelete:
     def test_delete(self, mock_get_client, runner):
         client = _mock_client()
         mock_get_client.return_value = client
-        result = runner.invoke(cli, ["delete", "--file", "North Star"])
+        result = runner.invoke(cli, ["delete", "--file", "North Star", "--yes"])
         assert result.exit_code == 0
         assert "Deleted" in result.output
         client.delete_note.assert_called_once_with("North Star.md")
@@ -710,6 +710,7 @@ class TestProperties:
                 "done",
                 "--file",
                 "ClosedClaw",
+                "--yes",
             ],
         )
         assert result.exit_code == 0

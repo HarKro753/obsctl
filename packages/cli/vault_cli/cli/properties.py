@@ -68,8 +68,10 @@ def property_read(name, file_name, json_mode):
     type=click.Choice(["text", "list", "number", "checkbox"]),
     help="Value type",
 )
+@click.option("--yes", is_flag=True, help="Skip confirmation prompt")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def property_set(name, value, file_name, value_type, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would change without writing")
+def property_set(name, value, file_name, value_type, yes, json_mode, dry_run):
     """Set a property on a note."""
     client = get_client()
     path = resolve_file(client, file_name)
@@ -101,6 +103,25 @@ def property_set(name, value, file_name, value_type, json_mode):
     else:
         typed_value = value
 
+    # Read current value for display
+    metadata, _ = parse_frontmatter(note["content"])
+    current_value = metadata.get(name)
+
+    if dry_run:
+        click.echo(f"Would set {name}:")
+        click.echo(f"  Current: {name} = {current_value!r}")
+        click.echo(f"  New:     {name} = {typed_value!r}")
+        return
+
+    # Show preview and ask for confirmation unless --yes
+    if not yes:
+        click.echo(f"Current: {name} = {current_value!r}")
+        click.echo(f"New:     {name} = {typed_value!r}")
+        confirmed = click.confirm("Apply?", default=True)
+        if not confirmed:
+            click.echo("Aborted.")
+            return
+
     new_content = set_property(note["content"], name, typed_value)
     result = client.write_note(path, new_content)
 
@@ -117,7 +138,8 @@ def property_set(name, value, file_name, value_type, json_mode):
 @click.option("--name", required=True, help="Property name")
 @click.option("--file", "file_name", required=True, help="Note name")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-def property_remove(name, file_name, json_mode):
+@click.option("--dry-run", is_flag=True, help="Show what would change without writing")
+def property_remove(name, file_name, json_mode, dry_run):
     """Remove a property from a note."""
     client = get_client()
     path = resolve_file(client, file_name)
@@ -126,6 +148,14 @@ def property_remove(name, file_name, json_mode):
     if note is None:
         click.echo(f"Note not found: {path}", err=True)
         raise SystemExit(1)
+
+    if dry_run:
+        metadata, _ = parse_frontmatter(note["content"])
+        current_value = metadata.get(name)
+        click.echo(
+            f"Would remove property '{name}' (current value: {current_value!r}) from: {path}"
+        )
+        return
 
     new_content = remove_property(note["content"], name)
     result = client.write_note(path, new_content)
