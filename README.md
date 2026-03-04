@@ -1,116 +1,88 @@
+<div align="center">
+
 # obsctl
 
-> Control plane for Obsidian. Like `kubectl`, but for your knowledge graph.
+**Programmatic access to your Obsidian vault.**
 
-obsctl makes Obsidian programmable — for AI agents and humans alike. One repo, three layers:
+CLI · Managed Sync · Obsidian Plugin · Agent Skills
 
-| Package | What it does |
-|---------|-------------|
-| `packages/cli` | Python CLI — `vault read`, `vault write`, `vault search`, graph traversal |
-| `packages/plugin` | Obsidian plugin — replaces LiveSync's manual setup with Google Sign-In |
-| `packages/backend` | FastAPI service — provisions a CouchDB vault per user, issues JWTs |
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg)](packages/cli)
+[![PyPI](https://img.shields.io/pypi/v/obsidian-vault-cli)](https://pypi.org/project/obsidian-vault-cli/)
 
-Skills and prompts for AI agents live in `skills/` and `prompts/`.
+</div>
 
 ---
 
-## The problem
+obsctl is a monorepo for making Obsidian vaults programmable. It provides a CLI for agents and power users, a managed sync backend with Google OAuth, an Obsidian plugin that replaces manual CouchDB setup with a single sign-in, and ClawHub skills for AI agents.
 
-Your Obsidian vault is a knowledge graph. AI agents should be able to read it, write to it, and traverse it — without Obsidian running, without copy-pasting CouchDB credentials, without curl scripts.
-
-obsctl fixes that.
-
----
-
-## Quickstart
-
-### CLI (for agents and power users)
-
-```bash
-pip install obsidian-vault-cli    # published from packages/cli/
-
-vault config set vault.host obsidian.yourhost.com
-vault config set vault.username admin
-vault config set vault.password yourpassword
-
-vault read file="north star"
-vault search query="agent loop" --context
-vault backlinks file="closedclaw"
-vault create name="New Idea" folder="References" content="# Idea"
-```
-
-### Managed sync (zero-config)
-
-1. Install the plugin from `packages/plugin/` into Obsidian
-2. Click **Sign in with Google**
-3. Done — vault syncs automatically, no server config required
-
-### Self-hosting
-
-```bash
-cp packages/backend/.env.example packages/backend/.env
-# fill in GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET
-docker compose up
-```
-
----
-
-## Monorepo structure
-
-```
-obsctl/
-├── packages/
-│   ├── cli/         # Python 3.10+ CLI — pip install obsidian-vault-cli
-│   ├── plugin/      # Obsidian plugin (fork of obsidian-livesync, MIT)
-│   └── backend/     # Python 3.12 + FastAPI auth + provisioning
-├── skills/
-│   ├── obsidian-vault/   # ClawHub skill — vault design system for agents
-│   └── obsidian-cli/     # ClawHub skill — how agents use the CLI
-├── prompts/         # Reusable agent prompts for vault workflows
-├── docs/
-│   └── self-hosting.md
-├── docker-compose.yml
-└── SPEC.md
-```
+All packages share the same underlying model: your vault lives in CouchDB via [Self-hosted LiveSync](https://github.com/vrtmrz/obsidian-livesync), and obsctl gives structured, safe access to everything in it.
 
 ---
 
 ## Packages
 
-### `packages/cli` — obsidian-vault-cli
-
-Full CLI reference: [packages/cli/SPEC.md](packages/cli/SPEC.md)
-
-Commands: `read`, `write`, `create`, `delete`, `move`, `search`, `backlinks`, `links`, `tags`, `property:set`, `unresolved`, `orphans`, `templates` and more.
-
-Safety built in: `--force` to overwrite, `--yes` to delete, `--dry-run` to preview, read-before-write on property changes.
-
-### `packages/plugin` — Obsidian plugin
-
-Fork of [obsidian-livesync](https://github.com/vrtmrz/obsidian-livesync) (MIT). Minimal diff — only the auth/config layer changes. All sync logic (conflict resolution, chunking, E2E encryption) is unchanged.
-
-### `packages/backend` — FastAPI provisioning service
-
-- `GET /auth/google` → Google OAuth redirect
-- `GET /auth/callback` → JWT
-- `GET /credentials` → CouchDB endpoint + per-user credentials
-- `GET /health`
-
-Stack: Python 3.12, FastAPI, uvicorn, sqlite3, python-jose, authlib, httpx.
-
----
+| Package | Description |
+|---------|-------------|
+| [`packages/cli`](packages/cli) | Python CLI — read, write, search, graph traversal, tags, properties |
+| [`packages/plugin`](packages/plugin) | Obsidian plugin — Google Sign-In replaces manual CouchDB setup |
+| [`packages/backend`](packages/backend) | FastAPI service — provisions a CouchDB vault per user, issues JWTs |
 
 ## Skills
 
-Skills in `skills/` are [ClawHub](https://clawhub.com)-compatible agent skills.
-
 | Skill | Description |
 |-------|-------------|
-| `obsidian-vault` | Vault design system — folder structure, properties, linking rules, retrieval patterns |
-| `obsidian-cli` | How agents use the `vault` CLI — commands, patterns, safety flags |
+| [`skills/obsidian-vault`](skills/obsidian-vault) | Vault design system for agents — structure, properties, linking, retrieval |
+| [`skills/obsidian-cli`](skills/obsidian-cli) | How agents use the `vault` CLI — commands, patterns, safety flags |
+
+---
+
+## Getting started
+
+### CLI
+
+```bash
+pip install obsidian-vault-cli
+
+vault config set vault.host obsidian.yourhost.com
+vault config set vault.username admin
+vault config set vault.password yourpassword
+
+vault ping
+vault read --file "north star"
+vault search --query "agent loop" --context
+vault backlinks --file "closedclaw"
+```
+
+Full reference: [docs/cli.md](docs/cli.md)
+
+### Plugin
+
+Install `packages/plugin/` as an Obsidian community plugin, then click **Sign in with Google** in the plugin settings. No server URLs. No credential copying.
+
+Full guide: [docs/plugin.md](docs/plugin.md)
+
+### Self-hosting the backend
+
+```bash
+cp packages/backend/.env.example packages/backend/.env
+# Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET, COUCHDB_URL
+docker compose up
+```
+
+Full guide: [docs/self-hosting.md](docs/self-hosting.md)
+
+---
+
+## Documentation
+
+- [docs/cli.md](docs/cli.md) — full CLI command reference
+- [docs/plugin.md](docs/plugin.md) — plugin installation and OAuth setup
+- [docs/self-hosting.md](docs/self-hosting.md) — running the backend yourself
+- [docs/architecture.md](docs/architecture.md) — how the pieces fit together
 
 ---
 
 ## License
 
-MIT — plugin package is a fork of [vrtmrz/obsidian-livesync](https://github.com/vrtmrz/obsidian-livesync) (also MIT).
+MIT. The plugin package is a fork of [vrtmrz/obsidian-livesync](https://github.com/vrtmrz/obsidian-livesync), also MIT.
