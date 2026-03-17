@@ -1,4 +1,4 @@
-"""CRUD commands: read, create, write, append, prepend, delete, move, rename."""
+"""CRUD commands: read, create, write, append, prepend, delete."""
 
 import difflib
 
@@ -329,57 +329,3 @@ def delete_cmd(file_name, yes, json_mode, dry_run):
         output(result, json_mode=True)
     else:
         click.echo(f"Deleted: {path}")
-
-
-@click.command()
-@click.option("--file", "file_name", required=True, help="Source note name")
-@click.option("--to", "to_path", required=True, help="Destination path")
-@click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-@click.option("--dry-run", is_flag=True, help="Show what would happen without moving")
-def move(file_name, to_path, json_mode, dry_run):
-    """Move a note to a new path."""
-    client = get_client()
-    path = resolve_file(client, file_name)
-
-    if dry_run:
-        click.echo(f"Would move: {path} -> {to_path}")
-        return
-
-    result = client.move_note(path, to_path)
-
-    if json_mode:
-        output(result, json_mode=True)
-    else:
-        click.echo(f"Moved: {path} -> {to_path}")
-
-
-@click.command()
-@click.option("--file", "file_name", required=True, help="Note name")
-@click.option("--name", "new_name", required=True, help="New name")
-@click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
-@click.option("--dry-run", is_flag=True, help="Show what would happen without renaming")
-def rename(file_name, new_name, json_mode, dry_run):
-    """Rename a note (keeps same folder)."""
-    client = get_client()
-    path = resolve_file(client, file_name)
-
-    # Keep the same folder, change the filename
-    if "/" in path:
-        folder = path.rsplit("/", 1)[0]
-        new_path = f"{folder}/{new_name}"
-    else:
-        new_path = new_name
-
-    if not new_path.endswith(".md"):
-        new_path += ".md"
-
-    if dry_run:
-        click.echo(f"Would rename: {path} -> {new_path}")
-        return
-
-    result = client.move_note(path, new_path)
-
-    if json_mode:
-        output(result, json_mode=True)
-    else:
-        click.echo(f"Renamed: {path} -> {new_path}")

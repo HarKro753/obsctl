@@ -661,7 +661,7 @@ class TestDryRun:
         assert result.exit_code == 0
         client.write_note.assert_not_called()
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move_dry_run(self, mock_get_client, runner):
         """vault move --dry-run shows what would be moved without moving."""
         client = _mock_client()
@@ -680,7 +680,7 @@ class TestDryRun:
         assert result.exit_code == 0
         client.move_note.assert_not_called()
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_dry_run(self, mock_get_client, runner):
         """vault rename --dry-run shows what would be renamed."""
         client = _mock_client()
