@@ -5,7 +5,7 @@ import difflib
 import click
 
 from vault_cli.cli.errors import handle_write_error, handle_delete_error
-from vault_cli.cli.helpers import get_client, output, resolve_file
+from vault_cli.cli.helpers import get_client, output, resolve_file, enforce_guardrails
 
 
 @click.command()
@@ -66,7 +66,9 @@ def read(file_name, file_path, json_mode):
 @click.option("--template", default=None, help="Template name to use")
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
 @click.option("--dry-run", is_flag=True, help="Show what would happen without writing")
-def create(name, content, folder, template, json_mode, dry_run):
+@click.option("--yes", is_flag=True, help="Accept vault rule warnings automatically")
+@click.option("--strict", is_flag=True, help="Treat rule violations as hard errors")
+def create(name, content, folder, template, json_mode, dry_run, yes, strict):
     """Create a new note."""
     client = get_client()
 
@@ -120,6 +122,9 @@ def create(name, content, folder, template, json_mode, dry_run):
             click.echo(f"Template not found: {template}", err=True)
             raise SystemExit(1)
 
+    # Vault rule guardrails — check before any mutation
+    enforce_guardrails(client, path, content, yes=yes, strict=strict)
+
     if dry_run:
         click.echo(f"Would create: {path} ({len(content)} chars)")
         return
@@ -144,9 +149,15 @@ def create(name, content, folder, template, json_mode, dry_run):
 )
 @click.option("--json", "json_mode", is_flag=True, help="Output as JSON")
 @click.option("--dry-run", is_flag=True, help="Show what would happen without writing")
-def write_cmd(file_path, content, force, show_diff, json_mode, dry_run):
+@click.option("--yes", is_flag=True, help="Accept vault rule warnings automatically")
+@click.option("--strict", is_flag=True, help="Treat rule violations as hard errors")
+def write_cmd(file_path, content, force, show_diff, json_mode, dry_run, yes, strict):
     """Write content to a note (create or overwrite)."""
     client = get_client()
+
+    # Vault rule guardrails — check before any mutation
+    # (--force is for overwrite, NOT for rule bypass)
+    enforce_guardrails(client, file_path, content, yes=yes, strict=strict)
 
     # Check if doc already exists
     existing = client.read_note(file_path)

@@ -1,4 +1,4 @@
-"""Shared CLI helpers — client instantiation, output formatting."""
+"""Shared CLI helpers — client instantiation, output formatting, guardrails."""
 
 import json
 import sys
@@ -7,6 +7,12 @@ import click
 
 from vault_cli.core.config import load_config
 from vault_cli.core.client import VaultClient
+from vault_cli.core.guardrails import (
+    check_rules,
+    format_violation,
+    get_existing_folders,
+    Violation,
+)
 
 
 def get_client():
@@ -89,3 +95,46 @@ def resolve_file(client, file_name):
 
     click.echo(f"Note not found: {file_name}", err=True)
     sys.exit(1)
+
+
+def enforce_guardrails(client, path, content, *, yes=False, strict=False):
+    """Run vault rules and enforce them based on mode flags.
+
+    Modes:
+        default (yes=False, strict=False): Interactive prompt, y/N
+        --yes   (yes=True):  Accept all, log accepted warnings
+        --strict (strict=True): Hard fail on any violation (exit 2)
+
+    Args:
+        client: VaultClient instance for dynamic folder lookup.
+        path: Target note path.
+        content: Note content (for frontmatter checks).
+        yes: Accept all warnings automatically.
+        strict: Treat violations as hard errors.
+
+    Raises:
+        SystemExit(2): On rejected/strict rule violation.
+    """
+    existing_folders = get_existing_folders(client)
+    violations = check_rules(path, content, existing_folders)
+
+    if not violations:
+        return  # No issues
+
+    # Print all violations to stderr so they don't corrupt structured output
+    for v in violations:
+        click.echo(format_violation(v), err=True)
+
+    if strict:
+        click.echo("\nError: Rule violation in strict mode. Aborting.", err=True)
+        raise SystemExit(2)
+
+    if yes:
+        click.echo("(accepted via --yes)", err=True)
+        return  # Proceed
+
+    # Interactive mode: prompt
+    click.echo("")
+    confirmed = click.confirm("Proceed anyway?", default=False)
+    if not confirmed:
+        raise SystemExit(2)

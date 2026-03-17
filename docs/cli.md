@@ -32,9 +32,44 @@ All mutating commands support these flags:
 | Flag | Behaviour |
 |------|-----------|
 | `--force` | Skip existence guard, overwrite unconditionally |
-| `--yes` | Skip confirmation prompts (for scripts) |
+| `--yes` | Accept vault rule warnings automatically (for scripts/agents) |
+| `--strict` | Treat vault rule violations as hard errors (exit code 2) |
 | `--dry-run` | Print what would happen, do nothing |
 | `--diff` | Show unified diff of content change, do nothing |
+
+---
+
+## Vault rule guardrails
+
+`vault create`, `vault write`, and `vault move` enforce vault design conventions before any write:
+
+| Rule | Trigger |
+|------|---------|
+| **Folder placement** | Target folder does not exist in the vault |
+| **Properties system** | Note has no `categories` property in frontmatter |
+| **Placement rules** | `[[References]]` category at root, or non-References category in `References/` |
+
+Warning output is parseable (starts with `⚠ Rule:`):
+
+```
+⚠ Rule: Folder placement
+  Folder "30 References" does not exist in the vault.
+  Existing folders: Categories, Daily, Projects, References, Templates
+  ...
+  See: vault design rules → "Folders are for infrastructure, not organization"
+
+Proceed anyway? [y/N]
+```
+
+| Mode | Flag | Behaviour |
+|------|------|-----------|
+| Interactive (default) | _(none)_ | Prompt with y/N, defaults to No |
+| Agent/script | `--yes` | Accept and log warning, proceed |
+| CI/strict | `--strict` | Hard fail with exit code 2 |
+
+Exit codes: `0` success, `1` error, `2` rule violation rejected.
+
+`--force` does NOT bypass rules — it only controls overwrite. These are separate concerns.
 
 ---
 
@@ -50,21 +85,24 @@ vault read --file "closedclaw" --json       # JSON output
 
 ### Create
 
-Fails clearly if the note already exists.
+Fails clearly if the note already exists. Runs vault rule guardrails before writing.
 
 ```bash
 vault create --name "New Idea" --folder "References" --content "# Idea"
 vault create --name "Daily Note" --template "Daily"
+vault create --name "Idea" --folder "NewFolder" --content "..." --yes     # accept rule warnings
+vault create --name "Idea" --folder "NewFolder" --content "..." --strict  # fail on violations
 ```
 
 ### Write
 
-**Requires `--force` to overwrite an existing note.**
+**Requires `--force` to overwrite an existing note.** Runs vault rule guardrails before writing.
 
 ```bash
 vault write --path "References/Person.md" --content "..." --force
 vault write --path "References/Person.md" --content "..." --diff     # preview only
 vault write --path "References/Person.md" --content "..." --dry-run  # no write
+vault write --path "NewFolder/Note.md" --content "..." --yes         # accept rule warnings
 ```
 
 ### Append / Prepend
@@ -88,8 +126,12 @@ vault delete --file "old note" --dry-run # preview only
 
 ### Move / Rename
 
+Runs vault rule guardrails on the destination path.
+
 ```bash
 vault move --file "draft" --to "References/final.md"
+vault move --file "draft" --to "NewFolder/final.md" --yes     # accept rule warnings
+vault move --file "draft" --to "NewFolder/final.md" --strict  # fail on violations
 vault rename --file "draft" --name "Final Version"
 ```
 

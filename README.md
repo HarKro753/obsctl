@@ -54,7 +54,7 @@ vault search --query "agent loop" --context
 vault backlinks --file "closedclaw"
 ```
 
-Full reference: [docs/cli.md](docs/cli.md)
+Full reference (including safety flags and vault rule guardrails): [docs/cli.md](docs/cli.md)
 
 ### Plugin
 

@@ -26,12 +26,14 @@ vault read --file "closedclaw" --json       # JSON output for parsing
 
 **Always use `--force` to overwrite existing notes. Without it, the command aborts.**
 
-```bash
-# Create new note
-vault create --name "New Idea" --folder "References" --content "# Idea\n..."
+`create`, `write`, and `move` enforce vault rule guardrails. Use `--yes` to accept warnings (agents), or `--strict` to hard-fail (CI).
 
-# Overwrite existing note (requires --force)
-vault write --path "References/Person.md" --content "..." --force
+```bash
+# Create new note (guardrails check folder existence + categories)
+vault create --name "New Idea" --folder "References" --content "# Idea\n..." --yes
+
+# Overwrite existing note (requires --force; --yes accepts rule warnings)
+vault write --path "References/Person.md" --content "..." --force --yes
 
 # Preview changes without writing
 vault write --path "References/Person.md" --content "..." --diff
@@ -92,9 +94,26 @@ vault delete --file "old note" --dry-run      # preview only
 | Flag | Behaviour |
 |------|-----------|
 | `--force` | Skip existence guard, overwrite unconditionally |
-| `--yes` | Skip confirmation prompts (for scripts/agents) |
+| `--yes` | Accept vault rule warnings automatically (for agents/scripts) |
+| `--strict` | Treat vault rule violations as hard errors (exit code 2) |
 | `--dry-run` | Print what would happen, do nothing |
 | `--diff` | Show unified diff of content change, do nothing |
+
+## Vault rule guardrails
+
+`create`, `write`, and `move` enforce vault conventions before any mutation:
+
+| Rule | Trigger |
+|------|---------|
+| **Folder placement** | Target folder does not exist in the vault (dynamic check) |
+| **Properties system** | Note has no `categories` property in frontmatter |
+| **Placement rules** | `[[References]]` category at root, or non-References in `References/` |
+
+Agents should use `--yes` on every `create`, `write`, and `move` to auto-accept warnings. Use `--strict` when you need hard validation (exit code 2 on violation).
+
+Warning output starts with `⚠ Rule:` and is parseable. Exit code 2 = rule violation (distinct from exit code 1 = error, exit code 0 = success).
+
+`--force` does NOT bypass rules. `--force` controls overwrite; `--yes`/`--strict` control rules. These are separate concerns.
 
 ## ⚠️ Rules for agents
 
@@ -103,6 +122,7 @@ vault delete --file "old note" --dry-run      # preview only
 3. **`vault property:set` reads and diffs first** — safe for frontmatter mutations
 4. **Use `vault create` for new notes** — fails clearly if already exists
 5. **CouchDB `deleted: true` bug**: if a write was preceded by `vault delete`, the CLI will warn you. Acknowledge with `--yes`.
+6. **Always use `--yes` on `create`, `write`, and `move`** — guardrails will prompt interactively otherwise, which blocks agents. If exit code is 2, a vault rule was violated — check the warning and decide whether to retry.
 
 ## File listing
 

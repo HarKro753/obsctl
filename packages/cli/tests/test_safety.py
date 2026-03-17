@@ -191,6 +191,7 @@ class TestWriteSafety:
                 "--content",
                 "new content",
                 "--force",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -204,7 +205,7 @@ class TestWriteSafety:
         mock_get_client.return_value = client
         result = runner.invoke(
             cli,
-            ["write", "--path", "brand-new-note.md", "--content", "hello"],
+            ["write", "--path", "brand-new-note.md", "--content", "hello", "--yes"],
         )
         assert result.exit_code == 0
         client.write_note.assert_called_once()
@@ -216,7 +217,7 @@ class TestWriteSafety:
         mock_get_client.return_value = client
         result = runner.invoke(
             cli,
-            ["write", "--path", "Projects/ClosedClaw.md", "--content", "new"],
+            ["write", "--path", "Projects/ClosedClaw.md", "--content", "new", "--yes"],
         )
         # Should mention the note exists
         assert (
@@ -247,6 +248,7 @@ class TestWriteDiff:
                 "--content",
                 "# ClosedClaw\n\nRewritten.",
                 "--diff",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -269,6 +271,7 @@ class TestWriteDiff:
                 "--content",
                 "new content",
                 "--diff",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -316,6 +319,7 @@ class TestWriteDeletedDetection:
                 "--content",
                 "restored content",
                 "--force",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -372,7 +376,7 @@ class TestCreateSafety:
         mock_get_client.return_value = client
         result = runner.invoke(
             cli,
-            ["create", "--name", "Brand New Note", "--content", "# Hello"],
+            ["create", "--name", "Brand New Note", "--content", "# Hello", "--yes"],
         )
         assert result.exit_code == 0
         assert "Created" in result.output
@@ -537,6 +541,7 @@ class TestDryRun:
                 "--content",
                 "hello",
                 "--dry-run",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -558,6 +563,7 @@ class TestDryRun:
                 "--content",
                 "shorter",
                 "--dry-run",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -593,6 +599,7 @@ class TestDryRun:
                 "--content",
                 "body",
                 "--dry-run",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -675,6 +682,7 @@ class TestDryRun:
                 "--to",
                 "Archive/North Star.md",
                 "--dry-run",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -752,6 +760,7 @@ class TestWrappedErrors:
                 "--content",
                 "hello",
                 "--force",
+                "--yes",
             ],
         )
         assert result.exit_code != 0

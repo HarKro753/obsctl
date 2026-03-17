@@ -4,7 +4,7 @@ import os
 
 import click
 
-from vault_cli.cli.helpers import get_client, output, resolve_file
+from vault_cli.cli.helpers import get_client, output, resolve_file, enforce_guardrails
 from vault_cli.core.backlinks import update_backlinks
 
 
@@ -16,10 +16,19 @@ from vault_cli.core.backlinks import update_backlinks
 @click.option(
     "--no-backlinks", is_flag=True, help="Skip backlink rewriting (legacy behaviour)"
 )
-def move(file_name, to_path, json_mode, dry_run, no_backlinks):
+@click.option("--yes", is_flag=True, help="Accept vault rule warnings automatically")
+@click.option("--strict", is_flag=True, help="Treat rule violations as hard errors")
+def move(file_name, to_path, json_mode, dry_run, no_backlinks, yes, strict):
     """Move a note to a new path. Rewrites backlinks if the filename changes."""
     client = get_client()
     path = resolve_file(client, file_name)
+
+    # Read the note content for frontmatter checks
+    note = client.read_note(path)
+    note_content = note["content"] if note else ""
+
+    # Vault rule guardrails on the destination path
+    enforce_guardrails(client, to_path, note_content, yes=yes, strict=strict)
 
     # Detect if the filename (not just folder) changed
     old_name = _basename_no_ext(path)
