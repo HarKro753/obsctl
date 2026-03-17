@@ -24,18 +24,27 @@ MOCK_NOTES_LIST = [
 ]
 
 NOTE_CONTENTS = {
-    "Projects/Alpha.md": "# Alpha\n\nMain project note.\n",
+    "Projects/Alpha.md": (
+        '---\ncategories:\n  - "[[Projects]]"\n---\n\n# Alpha\n\nMain project note.\n'
+    ),
     "References/Beta.md": (
         "---\n"
         "categories:\n"
-        '  - "[[Alpha]]"\n'
+        '  - "[[References]]"\n'
         "---\n"
         "\n"
         "# Beta\n"
         "\n"
         "References [[Alpha]] and [[Alpha#Details|see details]].\n"
     ),
-    "Gamma.md": "# Gamma\n\nLinks to [[Alpha]] once.\n",
+    "Gamma.md": (
+        "---\n"
+        "categories:\n"
+        '  - "[[Ideas]]"\n'
+        "---\n"
+        "\n"
+        "# Gamma\n\nLinks to [[Alpha]] once.\n"
+    ),
 }
 
 
@@ -182,7 +191,7 @@ class TestMoveBacklinks:
         mock_get_client.return_value = client
         result = runner.invoke(
             cli,
-            ["move", "--file", "Alpha", "--to", "References/Alpha.md"],
+            ["move", "--file", "Alpha", "--to", "References/Alpha.md", "--yes"],
         )
         assert result.exit_code == 0
         assert "Moved" in result.output
@@ -202,7 +211,7 @@ class TestMoveBacklinks:
         mock_get_client.return_value = client
         result = runner.invoke(
             cli,
-            ["move", "--file", "Alpha", "--to", "References/Omega.md"],
+            ["move", "--file", "Alpha", "--to", "References/Omega.md", "--yes"],
         )
         assert result.exit_code == 0
         assert "Moved" in result.output
@@ -228,6 +237,7 @@ class TestMoveBacklinks:
                 "--to",
                 "References/Omega.md",
                 "--dry-run",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -248,6 +258,7 @@ class TestMoveBacklinks:
                 "--to",
                 "References/Omega.md",
                 "--no-backlinks",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -262,7 +273,7 @@ class TestMoveBacklinks:
         mock_get_client.return_value = client
         result = runner.invoke(
             cli,
-            ["move", "--file", "Alpha", "--to", "References/Omega.md", "--json"],
+            ["move", "--file", "Alpha", "--to", "Projects/Omega.md", "--json", "--yes"],
         )
         assert result.exit_code == 0
         data = json.loads(result.output)

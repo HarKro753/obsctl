@@ -266,7 +266,7 @@ class TestCreate:
         client = _mock_client()
         mock_get_client.return_value = client
         result = runner.invoke(
-            cli, ["create", "--name", "Test Note", "--content", "# Hello"]
+            cli, ["create", "--name", "Test Note", "--content", "# Hello", "--yes"]
         )
         assert result.exit_code == 0
         assert "Created" in result.output
@@ -289,6 +289,7 @@ class TestCreate:
                 "References",
                 "--content",
                 "body",
+                "--yes",
             ],
         )
         assert result.exit_code == 0
@@ -298,8 +299,9 @@ class TestCreate:
     @patch("vault_cli.cli.crud.get_client")
     def test_create_json(self, mock_get_client, runner):
         mock_get_client.return_value = _mock_client()
+        content = '---\ncategories:\n  - "[[Ideas]]"\n---\n\nbody'
         result = runner.invoke(
-            cli, ["create", "--name", "X", "--content", "body", "--json"]
+            cli, ["create", "--name", "X", "--content", content, "--json", "--yes"]
         )
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -317,7 +319,7 @@ class TestWrite:
         client = _mock_client()
         mock_get_client.return_value = client
         result = runner.invoke(
-            cli, ["write", "--path", "test.md", "--content", "hello"]
+            cli, ["write", "--path", "test.md", "--content", "hello", "--yes"]
         )
         assert result.exit_code == 0
         assert "Written" in result.output
@@ -384,7 +386,15 @@ class TestMoveRename:
         client = _mock_client()
         mock_get_client.return_value = client
         result = runner.invoke(
-            cli, ["move", "--file", "North Star", "--to", "References/North Star.md"]
+            cli,
+            [
+                "move",
+                "--file",
+                "North Star",
+                "--to",
+                "References/North Star.md",
+                "--yes",
+            ],
         )
         assert result.exit_code == 0
         assert "Moved" in result.output

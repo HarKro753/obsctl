@@ -69,7 +69,8 @@ All mutating commands support these flags — designed for safe agent operation:
 | Flag | Behaviour |
 |------|-----------|
 | `--force` | Skip existence guard, overwrite unconditionally |
-| `--yes` | Skip confirmation prompts (for scripts/agents) |
+| `--yes` | Accept all vault rule warnings automatically (for scripts/agents) |
+| `--strict` | Treat vault rule violations as hard errors (exit code 2) |
 | `--dry-run` | Print what would happen, do nothing |
 | `--diff` | Show unified diff of content change, do nothing |
 
@@ -77,6 +78,31 @@ All mutating commands support these flags — designed for safe agent operation:
 - `vault create` **aborts if the note already exists**
 - `vault delete` **prompts for confirmation** (defaults to No)
 - `vault property:set` **shows current → new values** before writing
+
+## Vault rule guardrails
+
+`vault create`, `vault write`, and `vault move` enforce vault design rules as interactive guardrails. Violations produce a warning with the rule name, specific violation, and a reference to the vault design rule.
+
+| Rule | Trigger |
+|------|---------|
+| **Folder placement** | Target folder does not exist in the vault (dynamic check) |
+| **Properties system** | Note has no `categories` property in frontmatter |
+| **Placement rules** | `[[References]]` category at root, or non-References category in `References/` |
+
+```bash
+# Interactive (default) — prompts y/N
+vault create --name "My Idea" --folder "Random Stuff" --content "..."
+
+# Agent mode — accept warnings automatically
+vault create --name "My Idea" --folder "Random Stuff" --content "..." --yes
+
+# CI/strict mode — hard fail on violations (exit code 2)
+vault create --name "My Idea" --folder "Random Stuff" --content "..." --strict
+```
+
+Exit codes: `0` = success, `1` = error, `2` = rule violation rejected.
+
+`--force` does NOT bypass rule checks — it only controls overwrite behaviour. `--yes` and `--strict` control rule behaviour.
 
 ## All commands
 

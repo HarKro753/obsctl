@@ -336,6 +336,42 @@ vault delete --file "old note" --dry-run
 # → Would soft-delete: old note.md
 ```
 
+### Vault Rule Guardrails (v0.2.2)
+
+`vault create`, `vault write`, and `vault move` enforce vault design rules as interactive guardrails before any mutation. The folder existence check is dynamic — queries the vault, no hardcoded folder list.
+
+**Three rules:**
+
+| Rule | Trigger |
+|------|---------|
+| **Folder placement** | Target folder does not exist in the vault |
+| **Properties system** | Note has no `categories` property in frontmatter |
+| **Placement rules** | `[[References]]` category at root, or non-References category in `References/` |
+
+**Three modes:**
+
+| Flag | Behaviour |
+|------|-----------|
+| _(default)_ | Interactive prompt with rule explanation, `y/N` (defaults No) |
+| `--yes` | Accept all warnings, log them, proceed |
+| `--strict` | Hard fail on any violation (exit code 2, no prompt) |
+
+**Output format (parseable by agents):**
+```
+⚠ Rule: Folder placement
+  Folder "30 References" does not exist in the vault.
+  Existing folders: Categories, Daily, Projects, References, Templates
+  
+  Creating a new folder is usually a mistake — notes go in existing infrastructure folders.
+  See: vault design rules → "Folders are for infrastructure, not organization"
+```
+
+**Exit codes:** 0 = success, 1 = error, 2 = rule violation rejected.
+
+**`--force` vs `--yes`:** `--force` means "overwrite existing content". `--yes` means "I know I'm breaking a vault rule". These are separate concerns and cannot substitute for each other.
+
+**Implementation:** `vault_cli/core/guardrails.py` provides `check_rules(path, content, existing_folders)` which returns a list of `Violation` objects. `vault_cli/cli/helpers.py` provides `enforce_guardrails(client, path, content, yes=, strict=)` which handles the prompt/abort/accept logic.
+
 ---
 
 ## Feature Breakdown
@@ -548,7 +584,7 @@ obsidian-vault-cli/
 3. `vault_cli/cli/properties.py` — `properties`, `property:read/set/remove`
 4. `vault_cli/cli/templates.py` — `templates`, `template:read`
 
-### Phase 4: Safety & Error Handling (v0.2.0) 🔜
+### Phase 4: Safety & Error Handling (v0.2.0) ✅
 
 1. `write --force` guard — refuse silent overwrites by default
 2. `create` existence check
@@ -558,3 +594,13 @@ obsidian-vault-cli/
 6. `deleted: true` detection on write
 7. Wrapped HTTP error messages with context + hints
 8. Bump version to `0.2.0`
+
+### Phase 5: Vault Rule Guardrails (v0.2.2) ✅
+
+1. `vault_cli/core/guardrails.py` — rule engine with `check_rules()` and `Violation` dataclass
+2. Three rules: folder placement, missing categories, folder ↔ category mismatch
+3. `--yes` flag on `create`, `write`, `move` — accept warnings automatically
+4. `--strict` flag — treat violations as hard errors (exit code 2)
+5. Interactive mode (default) — prompt with `y/N`
+6. Dynamic folder existence check (queries vault, no hardcoded list)
+7. `--force` does NOT bypass rules (separate concern)

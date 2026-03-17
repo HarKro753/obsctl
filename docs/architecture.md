@@ -45,7 +45,8 @@ Stateless. Each command is a fresh invocation.
 ```
 VaultClient         CouchDB CRUD, LiveSync chunk format
 VaultIndex          In-memory graph built from _all_docs (graph/tag/search commands only)
-CLI (click)         Thin wrappers around VaultClient and VaultIndex
+Guardrails          Vault design rule checks (folder placement, categories, placement rules)
+CLI (click)         Thin wrappers around VaultClient, VaultIndex, and Guardrails
 ```
 
 Graph and search commands load the entire vault into memory, build a wikilink graph, run the query, and exit. No daemon, no cache.
