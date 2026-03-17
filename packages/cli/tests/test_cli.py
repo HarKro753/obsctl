@@ -379,7 +379,7 @@ class TestDelete:
 
 
 class TestMoveRename:
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move(self, mock_get_client, runner):
         client = _mock_client()
         mock_get_client.return_value = client
@@ -392,7 +392,7 @@ class TestMoveRename:
             "North Star.md", "References/North Star.md"
         )
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename(self, mock_get_client, runner):
         client = _mock_client()
         mock_get_client.return_value = client

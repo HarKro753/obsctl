@@ -89,7 +89,7 @@ def runner():
 class TestRenameBacklinks:
     """vault rename --file X --name Y rewrites backlinks by default."""
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_updates_backlinks(self, mock_get_client, runner):
         """Rename rewrites [[Alpha]] -> [[Omega]] in all other notes."""
         client = _mock_client()
@@ -99,7 +99,7 @@ class TestRenameBacklinks:
         assert "Renamed" in result.output
         assert "backlink" in result.output.lower() or "Updated" in result.output
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_reports_updated_count(self, mock_get_client, runner):
         """Output reports how many backlinks were updated in how many notes."""
         client = _mock_client()
@@ -110,7 +110,7 @@ class TestRenameBacklinks:
         output = result.output.lower()
         assert "backlink" in output or "link" in output
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_dry_run_shows_changes(self, mock_get_client, runner):
         """--dry-run shows what would change without writing."""
         client = _mock_client()
@@ -125,7 +125,7 @@ class TestRenameBacklinks:
         # move_note should NOT be called
         client.move_note.assert_not_called()
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_dry_run_lists_affected_notes(self, mock_get_client, runner):
         """--dry-run lists each note that would be modified."""
         client = _mock_client()
@@ -137,7 +137,7 @@ class TestRenameBacklinks:
         # Should list affected notes
         assert "Beta" in result.output or "Gamma" in result.output
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_no_backlinks_flag(self, mock_get_client, runner):
         """--no-backlinks skips backlink rewriting (legacy behaviour)."""
         client = _mock_client()
@@ -153,7 +153,7 @@ class TestRenameBacklinks:
         # write_note should NOT be called (no backlink rewriting)
         client.write_note.assert_not_called()
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_rename_json_output(self, mock_get_client, runner):
         """--json outputs structured JSON with rename + backlink info."""
         client = _mock_client()
@@ -175,7 +175,7 @@ class TestRenameBacklinks:
 class TestMoveBacklinks:
     """vault move detects if name changed and rewrites backlinks if needed."""
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move_same_name_no_rewrite(self, mock_get_client, runner):
         """Move to different folder, same name -> no backlink rewrite."""
         client = _mock_client()
@@ -195,7 +195,7 @@ class TestMoveBacklinks:
             or "backlink" not in output_lower  # or just doesn't mention them
         )
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move_name_change_triggers_rewrite(self, mock_get_client, runner):
         """Move with different name -> backlinks are rewritten."""
         client = _mock_client()
@@ -214,7 +214,7 @@ class TestMoveBacklinks:
             or "updated" in output_lower
         )
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move_dry_run(self, mock_get_client, runner):
         """--dry-run shows what move + backlink rewrite would do."""
         client = _mock_client()
@@ -234,7 +234,7 @@ class TestMoveBacklinks:
         assert "Would move" in result.output
         client.move_note.assert_not_called()
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move_no_backlinks_flag(self, mock_get_client, runner):
         """--no-backlinks skips backlink rewriting on move."""
         client = _mock_client()
@@ -255,7 +255,7 @@ class TestMoveBacklinks:
         # write_note should NOT be called for backlink rewriting
         client.write_note.assert_not_called()
 
-    @patch("vault_cli.cli.crud.get_client")
+    @patch("vault_cli.cli.relocate.get_client")
     def test_move_json_output(self, mock_get_client, runner):
         """--json returns structured output for move."""
         client = _mock_client()

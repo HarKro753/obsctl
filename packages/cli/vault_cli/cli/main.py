@@ -12,9 +12,8 @@ from vault_cli.cli.crud import (
     append,
     prepend,
     delete_cmd,
-    move,
-    rename,
 )
+from vault_cli.cli.relocate import move, rename
 from vault_cli.cli.files import files, folders
 from vault_cli.cli.search import search
 from vault_cli.cli.graph import backlinks, links, unresolved, orphans
